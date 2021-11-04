@@ -20,7 +20,5 @@
 (defn literal [x]
   (satisfy #(= x %)))
 
-((literal \3) "345")
-
 (comment
-  (->> (succeed) \3 [45]))
+  ((literal \3) "345"))
