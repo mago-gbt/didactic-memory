@@ -21,4 +21,6 @@
   (satisfy #(= x %)))
 
 (comment
-  ((literal \3) "345"))
+  ((literal \3) "335")
+
+  ((literal 3) [3 4 5]))

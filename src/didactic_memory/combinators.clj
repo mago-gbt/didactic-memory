@@ -1,5 +1,5 @@
 (ns didactic-memory.combinators
-  (:require [didactic-memory.primitives :as primitives]))
+  (:require [didactic-memory.primitives :as prim]))
 
 (defn alt
   ([p1 p2]
@@ -26,30 +26,41 @@
                  [(f v) out])
                (p inp)))))
 
-;; not working
+(defn xthen [p1 p2]
+  (using (then p1 p2) second))
+
+(defn thenx [p1 p2]
+  (using (then p1 p2) first))
+
 (defn many [p]
-  (alt
-    (using
-      (then
-        (using
-          (then p
-                (alt p
-                     (primitives/succeed [])))
-          (fn [v]
-            (reduce (fn [a b] (if (coll? b)
-                                (into a b)
-                                (conj a b)))
-                    []
-                    v)))
-        (alt p
-             (primitives/succeed [])))
-      (fn [v]
-        (reduce (fn [a b] (if (coll? b)
-                            (into a b)
-                            (conj a b)))
-                []
-                v)))
-    (primitives/succeed [])))
+  (fn [inp]
+    (let [inner-p (alt
+                    (using
+                      (then p (many p))
+                      #(apply cons %))
+                    (prim/succeed []))]
+      (inner-p inp))))
+
+(defn some [p]
+  (fn [inp]
+    (let [inner-p (using
+                    (then p (many p))
+                    #(apply cons %))]
+      (inner-p inp))))
+
+(defn string [s]
+  (fn [inp]
+    (let [inner-p (cond (empty? s) (prim/succeed [])
+                        :else (let [[x & xs] s]
+                                (using (then (prim/literal x)
+                                             (string xs))
+                                       #(apply cons %))))]
+      (inner-p inp))))
+
+(defn return [p v]
+  (using p
+         (fn [x]
+           v)))
 
 (comment
   ((alt (primitives/literal \7)
@@ -60,5 +71,8 @@
   ((then (primitives/literal \3)
          (primitives/satisfy char?))
    "345")
-  ((many (primitives/literal \a))
-   "aab"))
+  (many (primitives/literal \a))
+  ((some (primitives/literal \a))
+   "b")
+  ((string "someword")
+   "someword someotherword"))
