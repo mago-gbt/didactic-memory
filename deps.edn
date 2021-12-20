@@ -1,2 +1,7 @@
-{:dependencies
-  {org.clojure/clojure {:mvn/version "1.10.3"}}}
+{:deps
+  {org.clojure/clojure {:mvn/version "1.10.3"}
+   uncomplicate/neanderthal {:mvn/version "0.43.3"
+                             :exclusions [org.jcuda/jcuda-natives
+                                          org.jcuda/jcublas-natives]}
+   uncomplicate/fluokitten {:mvn/version "0.9.1"}
+   tesser.core/tesser.core {:mvn/version "1.0.4"}}}

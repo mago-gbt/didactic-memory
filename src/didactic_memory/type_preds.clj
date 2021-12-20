@@ -10,10 +10,10 @@
       (<= (int \A) (int c) (int \Z))))
 
 (def number
-  (com/some (prim/satisfy digit)))
+  (com/some-p (prim/satisfy digit)))
 
 (def word
-  (com/some (prim/satisfy letter)))
+  (com/some-p (prim/satisfy letter)))
 
 
 (comment

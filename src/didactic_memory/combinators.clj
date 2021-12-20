@@ -1,30 +1,36 @@
 (ns didactic-memory.combinators
-  (:require [didactic-memory.primitives :as prim]))
+  (:require [didactic-memory.primitives :as prim]
+            [clojure.core.reducers :as r]))
 
 (defn alt
-  ([p1 p2]
-   (fn [inp]
-     (into (p1 inp) (p2 inp))))
   ([p1 p2 & ps]
-   (reduce alt (alt p1 p2) ps)))
+   (fn [inp]
+     (->> (into [p1 p2] ps)
+          (r/map (fn [p] (p inp)))
+          (r/fold (fn ([] [])
+                      ([acc r]
+                       (into acc r))))))))
 
 (defn then [p1 p2]
   (fn [inp]
-    (into []
-          (comp
-            (map (fn [[v1 out1]]
-                   (map (fn [[v2 out2]]
-                          [[v1 v2] out2])
-                        (p2 out1))))
-            cat)
-          (p1 inp))))
+    (->> (p1 inp)
+         (r/map (fn [[v1 out1]]
+                  (->> (p2 out1)
+                       (r/map (fn [[v2 out2]]
+                                [[v1 v2] out2]))
+                       (r/fold (fn ([] [])
+                                   ([acc r]))))))
+         (r/fold (fn ([] [])
+                     ([acc r]))))))
 
 (defn using [p f]
   (fn [inp]
-    (into []
-          (map (fn [[v out]]
-                 [(f v) out])
-               (p inp)))))
+    (->> (p inp)
+         (r/map (fn [[v out]]
+                  [(f v) out]))
+         (r/fold (fn ([] [])
+                     ([acc r]
+                      (into acc r)))))))
 
 (defn xthen [p1 p2]
   (using (then p1 p2) second))
@@ -41,7 +47,7 @@
                     (prim/succeed []))]
       (inner-p inp))))
 
-(defn some [p]
+(defn some-p [p]
   (fn [inp]
     (let [inner-p (using
                     (then p (many p))
@@ -62,12 +68,19 @@
          (fn [x]
            v)))
 
+(defn any [p xs]
+  (apply alt (map p xs)))
+
+(comment ((any prim/literal " \t\n")
+          (didactic-memory.misc/pos " ")))
+
+(comment (didactic-memory.misc/pos " "))
+
 (comment
-  ((alt (primitives/literal \7)
-        (primitives/satisfy number?)
-        (primitives/satisfy char?)
-        (primitives/literal \3))
-   "345")
+
+  ((alt (prim/literal \3)
+        (prim/satisfy char?))
+   (didactic-memory.misc/pos "345"))
   ((then (primitives/literal \3)
          (primitives/satisfy char?))
    "345")
